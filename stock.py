@@ -10,7 +10,7 @@ st.title("📈 한/미 주가 등락 모니터링 대시보드")
 DEFAULT_NAMES = {
     "005930.KS": "삼성전자",
     "000660.KS": "SK하이닉스",
-    "035420.KS": "NAVER",
+    "066570.KS": "LG전자",
     "035720.KS": "카카오",
     "005380.KS": "현대자동차",
     "000270.KS": "기아",
@@ -32,7 +32,7 @@ DEFAULT_NAMES = {
 
 # 기본 20개 종목 리스트 정의 (yfinance 티커 형식)
 default_tickers = (
-    "005930.KS, 000660.KS, 035420.KS, 035720.KS, 005380.KS, "
+    "005930.KS, 000660.KS, 066570.KS, 035720.KS, 005380.KS, "
     "000270.KS, 068270.KS, 051910.KS, 207940.KS, 005490.KS, "
     "AAPL, MSFT, NVDA, TSLA, AMZN, GOOGL, META, NFLX, AMD, AVGO"
 )
@@ -149,8 +149,8 @@ if 'df_result' in st.session_state and not st.session_state.df_result.empty:
             sign = "+" if row["대비 변동"] > 0 else ""
             st.metric(
                 label=row["종목명"],
-                value=f"{row['현재가']:,.2f}",
-                delta=f"{sign}{row['대비 변동']:,.2f} ({row['등락률(%)']:+.2f}%)"
+                value=f"{row['현재가']:,.0f}",
+                delta=f"{sign}{row['대비 변동']:,.0f} ({row['등락률(%)']:+.1f}%)"
             )
             st.write("---")
 
