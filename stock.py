@@ -37,13 +37,39 @@ default_tickers = (
     "AAPL, MSFT, NVDA, TSLA, AMZN, GOOGL, META, NFLX, AMD, AVGO"
 )
 
-# 사이드바 설정 영역
+# [사이드바 상단] 종목 목록 편집 영역
 st.sidebar.header("종목 커스텀 설정")
 st.sidebar.write("조회할 종목 티커를 쉼표(,)로 구분하여 수정할 수 있습니다.")
 user_input = st.sidebar.text_area("종목 티커 목록", value=default_tickers, height=150)
 
 # 입력값 파싱
 tickers = [t.strip() for t in user_input.split(",") if t.strip()]
+
+# [사이드바 하단] 종목 티커 검색 기능 추가
+st.sidebar.markdown("---")
+st.sidebar.header("🔍 종목 티커 검색기")
+st.sidebar.write("회사명이나 브랜드를 한글 또는 영어로 검색해 보세요.")
+search_query = st.sidebar.text_input("검색어 입력", placeholder="예: 삼성전자, Apple, Nvidia")
+
+# 검색어가 입력되었을 때 실행
+if search_query:
+    try:
+        # 야후 파이낸스 검색 API 호출
+        search_results = yf.Search(search_query, max_results=5).quotes
+        if search_results:
+            st.sidebar.write("**검색 결과** (우측 아이콘을 클릭하여 복사):")
+            for quote in search_results:
+                symbol = quote.get('symbol')
+                name = quote.get('shortname') or quote.get('longname') or '이름 없음'
+                exch = quote.get('exchDisp') or quote.get('exchange') or ''
+                
+                # 티커 복사가 용이하도록 코드 블록 스타일로 출력
+                st.sidebar.code(symbol, language="text")
+                st.sidebar.caption(f"{name} | {exch}")
+        else:
+            st.sidebar.info("일치하는 검색 결과가 없습니다.")
+    except Exception as e:
+        st.sidebar.error("검색 중 오류가 발생했습니다.")
 
 # 회사 이름을 가져오는 캐시 함수 (새로운 커스텀 티커 입력 시 실시간 조회)
 @st.cache_data(ttl=86400) # 24시간 동안 캐시 유지
@@ -52,7 +78,6 @@ def get_company_name(ticker):
         return DEFAULT_NAMES[ticker]
     try:
         t = yf.Ticker(ticker)
-        # shortName 또는 longName이 존재하지 않으면 티커명을 그대로 반환
         name = t.info.get('shortName') or t.info.get('longName') or ticker
         return name
     except Exception:
@@ -64,6 +89,7 @@ def fetch_stock_data(ticker_list):
     df = yf.download(ticker_list, period="5d")
     return df
 
+# 동기화 처리
 if st.sidebar.button("데이터 동기화 (새로고침)") or 'df_result' not in st.session_state:
     if tickers:
         with st.spinner("금융 데이터 및 회사명을 수집하고 있습니다..."):
@@ -114,7 +140,7 @@ if 'df_result' in st.session_state and not st.session_state.df_result.empty:
         color = 'red' if val > 0 else 'blue' if val < 0 else 'white'
         return f'color: {color}; font-weight: bold;'
 
-    # 1. 그리드 뷰 (요청하신 대로 티커 대신 '종목명'을 라벨로 사용)
+    # 1. 그리드 뷰
     st.subheader("📌 종목별 현황 요약")
     cols = st.columns(4)
     for index, row in df_disp.iterrows():
@@ -122,7 +148,7 @@ if 'df_result' in st.session_state and not st.session_state.df_result.empty:
         with cols[col_idx]:
             sign = "+" if row["대비 변동"] > 0 else ""
             st.metric(
-                label=row["종목명"],  # 기존 row["티커"]에서 변경
+                label=row["종목명"],
                 value=f"{row['현재가']:,.2f}",
                 delta=f"{sign}{row['대비 변동']:,.2f} ({row['등락률(%)']:+.2f}%)"
             )
